@@ -1,5 +1,5 @@
 import os
-
+from PIL import Image
 import pygame
 
 pygame.init()
@@ -7,8 +7,11 @@ pygame.init()
 width = 600
 height = 600
 size = width, height
-best_res = '0'
+best_res = 0
 s = 0
+sch = 0
+
+tim = 0
 
 screen = pygame.display.set_mode(size)
 running = True
@@ -28,11 +31,11 @@ class shot:
 
 
 class button:
-    def __init__(self, x, y, cliced=False):
+    def __init__(self, x, y, cliced=False, w=200, h=100):
         self.x = x
         self.y = y
-        self.w = 200
-        self.h = 100
+        self.w = w
+        self.h = h
         self.cliced = cliced
 
     def draw(self, text, color=(255, 255, 0)):
@@ -45,10 +48,10 @@ class button:
         pygame.display.flip()
 
     def is_cliced(self):
-        global is_menu
+        #global is_menu
         x_m, y_m = event.pos
         if (x_m <= (self.x + self.w) and (x_m >= self.x)) and (
-                y_m <= (self.y + self.h) and (y_m >= self.y)) and is_menu[1]:
+                y_m <= (self.y + self.h) and (y_m >= self.y)): # and is_menu[1]:
             return True
         return False
 
@@ -60,9 +63,9 @@ def menu():
 
     button_start.draw('start')
     font1 = pygame.font.Font(None, 50)
-    screen.blit(font1.render('Best resalt:', 1, (0, 255, 0)),
+    screen.blit(font1.render('Best result:', 1, (0, 255, 0)),
                 (width // 2 - 100, height // 2 - 50))
-    screen.blit(font1.render('{} сек.'.format(best_res), 1, (0, 255, 0)),
+    screen.blit(font1.render(str(best_res), 1, (0, 255, 0)),
                 (width // 2 - 100, height // 2 - 20))
     pygame.display.flip()
 
@@ -91,9 +94,12 @@ class Monster:
         self.name = picture
         self.x = x
         self.y = y
+
+
         self.a = a
 
     def pos(self, dir):
+        global time
         if dir == 'r' or dir == 'r1':
             self.x += 25
 
@@ -105,9 +111,14 @@ class Monster:
 
 
 
+
+
     def draw(self):
         fullname = os.path.join('data', self.name)
         image = pygame.image.load(fullname).convert()
+
+        im = Image.open(fullname)
+        self.w, self.h = im.size
 
         image = image.convert_alpha()
         return image
@@ -122,16 +133,35 @@ is_game = False
 h = Heroo(width // 2 - 23, 525, 25)
 dir = 'd'
 clock = pygame.time.Clock()
+time = pygame.time.Clock()
+
+g_o = [False, False]
+
 for i in m:
     for j in range(5):
         monsters.append(Monster(i, ((width // 5) * j) + 10, m.index(i) * 50, 2))
 
 while running:
+
     for b in bullets:
         if b.y > 0:
             b.y -= b.vel
         else:
             bullets.pop(bullets.index(b))
+
+    if g_o[0]:
+        screen.fill((0, 0, 0))
+
+        font1 = pygame.font.Font(None, 50)
+        screen.blit(font1.render('GAME OVER', 1, (0, 255, 0)),
+                    (width // 2 - 100, height // 2 - 100))
+
+        b = button(width // 2 - 100, height // 2 +50, h=50)
+        b.draw('restart', color=(255, 255, 0))
+
+        b1 = button(width // 2 - 100, height // 2 +100, h=50)
+        b1.draw('exit', color=(255, 0, 0))
+        g_o[0] = False
 
     if is_menu[0]:
         screen.fill((0, 0, 0))
@@ -146,6 +176,16 @@ while running:
                 is_menu[1] = False
                 pygame.display.flip()
                 hero = h.load_image('hero.png')
+            if g_o[1]:
+                if b.is_cliced():
+                    is_menu[0] = True
+                    is_menu[1] = True
+                    g_o[1] = False
+
+                if b1.is_cliced():
+                    running = False
+
+
 
         if event.type == pygame.KEYDOWN:
 
@@ -165,7 +205,7 @@ while running:
                 if len(bullets) <= 7:
                     bullets.append(bullet)
 
-    if not is_menu[1]:
+    if not is_menu[1] and not g_o[1]:
         screen.fill((0, 0, 0))
         screen.blit(hero, (h.x, h.y))
 
@@ -183,7 +223,31 @@ while running:
             s = 0
 
         for b in bullets:
-            if b.x
+            for mo in monsters:
+                if (b.x >= mo.x and (b.x + W) <= (mo.x + mo.w)) and (b.y == (mo.y + mo.h)):
+                    monsters.pop(monsters.index(mo))
+                    bullets.pop(bullets.index(b))
+                    sch += 20
+
+                    break
+
+
+        best_res = sch
+        font = pygame.font.Font(None, 50)
+        screen.blit(font.render(str(sch), 1, (0, 255, 0)), (20, 10))
+
+        for m in monsters:
+            if m.y >= 450:
+
+                g_o[0], g_o[1] = True, True
+
+
+
+
+
+
+
+
     pygame.display.flip()
 
 pygame.quit()
