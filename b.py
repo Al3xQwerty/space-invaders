@@ -1,15 +1,27 @@
 import os
 from PIL import Image
 import pygame
+import random
+
+
 
 pygame.init()
 
 width = 600
 height = 600
 size = width, height
-best_res = 0
+
+f = open("br.txt", mode="r")
+best_res = int(f.read())
+f.close()
+
 s = 0
-sch = 0
+
+fullname = os.path.join('data1', 'background.mp3')
+pygame.mixer.music.load(fullname)
+pygame.mixer.music.play(-1)
+
+
 
 tim = 0
 
@@ -21,13 +33,14 @@ W, H = 5, 10
 
 class shot:
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, color=(255, 255, 0)):
         self.x = x
         self.y = y
         self.vel = 2
+        self.color = color
 
     def draw(self):
-        pygame.draw.rect(screen, (255, 255, 0), pygame.Rect(self.x, self.y, W, H))
+        pygame.draw.rect(screen, self.color, pygame.Rect(self.x, self.y, W, H))
 
 
 class button:
@@ -100,6 +113,7 @@ class Monster:
 
     def pos(self, dir):
         global time
+
         if dir == 'r' or dir == 'r1':
             self.x += 25
 
@@ -108,6 +122,7 @@ class Monster:
 
         if dir == 'd' or dir == 'd1':
             self.y += 10
+
 
 
 
@@ -124,30 +139,66 @@ class Monster:
         return image
 
 
-m = ['monster5.png', 'monster4.png', 'monster3.png', 'monster2.png', 'monster1.png']
 
-bullets = []
-monsters = []
+
+
+
+
 is_menu = [True, True]
-is_game = False
-h = Heroo(width // 2 - 23, 525, 25)
-dir = 'd'
-clock = pygame.time.Clock()
-time = pygame.time.Clock()
 
-g_o = [False, False]
+def Start():
+    global bullets, monsters, is_game, is_menu, h, dir, clock, time, g_o, sch, xx, u, m_bullets
 
-for i in m:
-    for j in range(5):
-        monsters.append(Monster(i, ((width // 5) * j) + 10, m.index(i) * 50, 2))
+
+
+    sch = 0
+    xx = 0
+
+    bullets = []
+    monsters = []
+    m_bullets = []
+    is_menu = [True, True]
+    is_game = False
+    h = Heroo(width // 2 - 23, 525, 25)
+    dir = 'd'
+    clock = pygame.time.Clock()
+    time = pygame.time.Clock()
+
+    u = 1
+
+    g_o = [False, False]
+
+def make_m():
+    global u
+    u = 1
+    m = ['monster5.png', 'monster4.png', 'monster3.png', 'monster2.png', 'monster1.png']
+    for i in m:
+        for j in range(5):
+            monsters.append(Monster(i, ((width // 5) * j) + 10, m.index(i) * 50, 2))
+
+
 
 while running:
+
+    if is_menu[0]:
+        Start()
+        make_m()
+        screen.fill((0, 0, 0))
+        menu()
+        is_menu[0] = False
 
     for b in bullets:
         if b.y > 0:
             b.y -= b.vel
         else:
             bullets.pop(bullets.index(b))
+
+    for b in m_bullets:
+        if b.y > 600:
+
+            m_bullets.pop(m_bullets.index(b))
+        else:
+            b.y += b.vel
 
     if g_o[0]:
         screen.fill((0, 0, 0))
@@ -156,17 +207,17 @@ while running:
         screen.blit(font1.render('GAME OVER', 1, (0, 255, 0)),
                     (width // 2 - 100, height // 2 - 100))
 
-        b = button(width // 2 - 100, height // 2 +50, h=50)
-        b.draw('restart', color=(255, 255, 0))
+        screen.blit(font1.render('result: {}'.format(sch), 1, (0, 170, 0)),
+                    (width // 2 - 100, height // 2 ))
+
+        butt = button(width // 2 - 100, height // 2 +50, h=50)
+        butt.draw('restart', color=(255, 255, 0))
 
         b1 = button(width // 2 - 100, height // 2 +100, h=50)
         b1.draw('exit', color=(255, 0, 0))
         g_o[0] = False
 
-    if is_menu[0]:
-        screen.fill((0, 0, 0))
-        menu()
-        is_menu[0] = False
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -177,7 +228,7 @@ while running:
                 pygame.display.flip()
                 hero = h.load_image('hero.png')
             if g_o[1]:
-                if b.is_cliced():
+                if butt.is_cliced():
                     is_menu[0] = True
                     is_menu[1] = True
                     g_o[1] = False
@@ -191,13 +242,17 @@ while running:
 
             key = pygame.key.get_pressed()
             if key[pygame.K_LEFT]:
-                h.x -= h.spd
+                if not(h.x <= 10):
+                    h.x -= h.spd
             elif key[pygame.K_RIGHT]:
-                h.x += h.spd
+                if not(h.x + 47 >= 590):
+                    h.x += h.spd
             elif key[pygame.K_UP]:
-                h.y -= h.spd
+                if not(h.y <= 10):
+                    h.y -= h.spd
             elif key[pygame.K_DOWN]:
-                h.y += h.spd
+                if not(h.y + 20 >= 595):
+                    h.y += h.spd
 
             if key[pygame.K_SPACE]:
                 bullet = shot(h.x + 20, h.y)
@@ -206,17 +261,33 @@ while running:
                     bullets.append(bullet)
 
     if not is_menu[1] and not g_o[1]:
+        if monsters == []:
+            make_m()
+
+
+
+
         screen.fill((0, 0, 0))
         screen.blit(hero, (h.x, h.y))
 
         for bullet_ in bullets:
             bullet_.draw()
 
+
+
         for i in monsters:
 
             screen.blit(i.draw(), (i.x, i.y))
+
+        for bullet_ in m_bullets:
+            bullet_.draw()
+
         s += clock.tick()
-        if s // 1000 >= 1:
+        if (xx % 15) == 0:
+            u -= 0.01
+            xx = 0
+        if s / 1000 >= u:
+            xx += 1
             dir = d[(d.index(dir) + 1) % 6]
             for i in monsters:
                 i.pos(dir)
@@ -224,7 +295,7 @@ while running:
 
         for b in bullets:
             for mo in monsters:
-                if (b.x >= mo.x and (b.x + W) <= (mo.x + mo.w)) and (b.y == (mo.y + mo.h)):
+                if (b.x >= mo.x and (b.x + W) <= (mo.x + mo.w)) and (b.y <= (mo.y + mo.h)):
                     monsters.pop(monsters.index(mo))
                     bullets.pop(bullets.index(b))
                     sch += 20
@@ -232,22 +303,48 @@ while running:
                     break
 
 
-        best_res = sch
+        best_res = max(sch, best_res)
         font = pygame.font.Font(None, 50)
         screen.blit(font.render(str(sch), 1, (0, 255, 0)), (20, 10))
+
+
+
+
+
+
 
         for m in monsters:
             if m.y >= 450:
 
                 g_o[0], g_o[1] = True, True
 
+        tim += time.tick()
+        if tim / 1000 >= 5:
 
+            m = random.choice(monsters)
+            bullet = shot(m.x + (m.w // 2), m.y + m.h, color=(255, 0, 0))
 
+            m_bullets.append(bullet)
+            tim = 0
 
-
-
+        for b in m_bullets:
+            if (b.x > h.x and b.x < h.x + 45) and (b.y + 10 >= h.y):
+                g_o[0], g_o[1] = True, True
 
 
     pygame.display.flip()
+
+
+
+f = open("br.txt", mode="w")
+f.write('')
+f.write(str(best_res))
+f.close()
+
+
+
+
+
+
 
 pygame.quit()
