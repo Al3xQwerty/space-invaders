@@ -3,8 +3,6 @@ from PIL import Image
 import pygame
 import random
 
-
-
 pygame.init()
 
 width = 600
@@ -21,14 +19,26 @@ fullname = os.path.join('data1', 'background.mp3')
 pygame.mixer.music.load(fullname)
 pygame.mixer.music.play(-1)
 
-
-
 tim = 0
 
 screen = pygame.display.set_mode(size)
 running = True
 
 W, H = 5, 10
+
+
+class explosion:
+    def __init__(self, x, y, n=0):
+        self.x = x
+        self.y = y
+        self.n = n
+
+    def draw(self):
+        fullname = os.path.join('data', 'boom.png')
+        image = pygame.image.load(fullname).convert()
+
+        image = image.convert_alpha()
+        return image
 
 
 class shot:
@@ -61,10 +71,10 @@ class button:
         pygame.display.flip()
 
     def is_cliced(self):
-        #global is_menu
+        # global is_menu
         x_m, y_m = event.pos
         if (x_m <= (self.x + self.w) and (x_m >= self.x)) and (
-                y_m <= (self.y + self.h) and (y_m >= self.y)): # and is_menu[1]:
+                y_m <= (self.y + self.h) and (y_m >= self.y)):  # and is_menu[1]:
             return True
         return False
 
@@ -101,13 +111,15 @@ class Heroo:
             image = image.convert_alpha()
         return image
 
+
 d = ['r1', 'r', 'd1', 'l1', 'l', 'd']
+
+
 class Monster:
     def __init__(self, picture, x, y, a):
         self.name = picture
         self.x = x
         self.y = y
-
 
         self.a = a
 
@@ -123,11 +135,6 @@ class Monster:
         if dir == 'd' or dir == 'd1':
             self.y += 10
 
-
-
-
-
-
     def draw(self):
         fullname = os.path.join('data', self.name)
         image = pygame.image.load(fullname).convert()
@@ -139,23 +146,19 @@ class Monster:
         return image
 
 
-
-
-
-
-
 is_menu = [True, True]
 
+
 def Start():
-    global bullets, monsters, is_game, is_menu, h, dir, clock, time, g_o, sch, xx, u, m_bullets
-
-
+    global bullets, monsters, is_game, is_menu, h, dir, clock, time, g_o, sch, xx, u, m_bullets, explosions
 
     sch = 0
     xx = 0
 
     bullets = []
     monsters = []
+
+    explosions = []
     m_bullets = []
     is_menu = [True, True]
     is_game = False
@@ -168,6 +171,7 @@ def Start():
 
     g_o = [False, False]
 
+
 def make_m():
     global u
     u = 1
@@ -175,7 +179,6 @@ def make_m():
     for i in m:
         for j in range(5):
             monsters.append(Monster(i, ((width // 5) * j) + 10, m.index(i) * 50, 2))
-
 
 
 while running:
@@ -186,6 +189,10 @@ while running:
         screen.fill((0, 0, 0))
         menu()
         is_menu[0] = False
+
+    for e in explosions:
+        if e.n >= 30:
+            explosions.pop(explosions.index(e))
 
     for b in bullets:
         if b.y > 0:
@@ -208,15 +215,14 @@ while running:
                     (width // 2 - 100, height // 2 - 100))
 
         screen.blit(font1.render('result: {}'.format(sch), 1, (0, 170, 0)),
-                    (width // 2 - 100, height // 2 ))
+                    (width // 2 - 100, height // 2))
 
-        butt = button(width // 2 - 100, height // 2 +50, h=50)
+        butt = button(width // 2 - 100, height // 2 + 50, h=50)
         butt.draw('restart', color=(255, 255, 0))
 
-        b1 = button(width // 2 - 100, height // 2 +100, h=50)
+        b1 = button(width // 2 - 100, height // 2 + 100, h=50)
         b1.draw('exit', color=(255, 0, 0))
         g_o[0] = False
-
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -236,22 +242,20 @@ while running:
                 if b1.is_cliced():
                     running = False
 
-
-
         if event.type == pygame.KEYDOWN:
 
             key = pygame.key.get_pressed()
             if key[pygame.K_LEFT]:
-                if not(h.x <= 10):
+                if not (h.x <= 10):
                     h.x -= h.spd
             elif key[pygame.K_RIGHT]:
-                if not(h.x + 47 >= 590):
+                if not (h.x + 47 >= 590):
                     h.x += h.spd
             elif key[pygame.K_UP]:
-                if not(h.y <= 10):
+                if not (h.y <= 10):
                     h.y -= h.spd
             elif key[pygame.K_DOWN]:
-                if not(h.y + 20 >= 595):
+                if not (h.y + 20 >= 595):
                     h.y += h.spd
 
             if key[pygame.K_SPACE]:
@@ -264,19 +268,13 @@ while running:
         if monsters == []:
             make_m()
 
-
-
-
         screen.fill((0, 0, 0))
         screen.blit(hero, (h.x, h.y))
 
         for bullet_ in bullets:
             bullet_.draw()
 
-
-
         for i in monsters:
-
             screen.blit(i.draw(), (i.x, i.y))
 
         for bullet_ in m_bullets:
@@ -296,31 +294,35 @@ while running:
         for b in bullets:
             for mo in monsters:
                 if (b.x >= mo.x and (b.x + W) <= (mo.x + mo.w)) and (b.y <= (mo.y + mo.h)):
+                    explosions.append(explosion(mo.x, mo.y))
                     monsters.pop(monsters.index(mo))
                     bullets.pop(bullets.index(b))
+
+                    fullname = os.path.join('data1', 'crash.wav')
+                    crash_sound = pygame.mixer.Sound(fullname)
+                    pygame.mixer.Sound.play(crash_sound)
+
                     sch += 20
 
                     break
-
+        for e in explosions:
+            im = e.draw()
+            screen.blit(im, (e.x, e.y))
+            e.n += 1
 
         best_res = max(sch, best_res)
         font = pygame.font.Font(None, 50)
         screen.blit(font.render(str(sch), 1, (0, 255, 0)), (20, 10))
 
-
-
-
-
-
-
         for m in monsters:
             if m.y >= 450:
-
                 g_o[0], g_o[1] = True, True
+                fullname = os.path.join('data1', 'crash.wav')
+                crash_sound = pygame.mixer.Sound(fullname)
+                pygame.mixer.Sound.play(crash_sound)
 
         tim += time.tick()
         if tim / 1000 >= 5:
-
             m = random.choice(monsters)
             bullet = shot(m.x + (m.w // 2), m.y + m.h, color=(255, 0, 0))
 
@@ -330,21 +332,15 @@ while running:
         for b in m_bullets:
             if (b.x > h.x and b.x < h.x + 45) and (b.y + 10 >= h.y):
                 g_o[0], g_o[1] = True, True
-
+                fullname = os.path.join('data1', 'end.wav')
+                crash_sound = pygame.mixer.Sound(fullname)
+                pygame.mixer.Sound.play(crash_sound)
 
     pygame.display.flip()
-
-
 
 f = open("br.txt", mode="w")
 f.write('')
 f.write(str(best_res))
 f.close()
-
-
-
-
-
-
 
 pygame.quit()
