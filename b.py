@@ -113,27 +113,30 @@ class Heroo:
 
 
 d = ['r1', 'r', 'd1', 'l1', 'l', 'd']
+d1 = ['r2', 'r1', 'r', 'd1', 'l2', 'l1', 'l', 'd']
 
 
 class Monster:
-    def __init__(self, picture, x, y, a):
+    def __init__(self, picture, x, y, a, a1=25, b1=10):
         self.name = picture
         self.x = x
         self.y = y
 
         self.a = a
+        self.a1 = a1
+        self.b1 = b1
 
     def pos(self, dir):
         global time
 
-        if dir == 'r' or dir == 'r1':
-            self.x += 25
+        if dir == 'r' or dir == 'r1' or dir == 'r2':
+            self.x += self.a1
 
-        if dir == 'l' or dir == 'l1':
-            self.x -= 25
+        if dir == 'l' or dir == 'l1' or dir == 'l2':
+            self.x -= self.a1
 
         if dir == 'd' or dir == 'd1':
-            self.y += 10
+            self.y += self.b1
 
     def draw(self):
         fullname = os.path.join('data', self.name)
@@ -150,22 +153,28 @@ is_menu = [True, True]
 
 
 def Start():
-    global bullets, monsters, is_game, is_menu, h, dir, clock, time, g_o, sch, xx, u, m_bullets, explosions
+    global bullets, monsters, is_game, is_menu, h, dir, clock, time, g_o, sch, xx, u, m_bullets, explosions, bonus, bb, u1, dir1, clock1, s1, mon
 
     sch = 0
     xx = 0
-
+    mon = Monster('bonus.png', 20, 20, 2, a1=(width // 3 - 38), b1=50)
     bullets = []
     monsters = []
-
+    bb = False
+    s1 = 0
     explosions = []
     m_bullets = []
     is_menu = [True, True]
     is_game = False
     h = Heroo(width // 2 - 23, 525, 25)
     dir = 'd'
+    dir1 = 'd'
+    u1 = 1
     clock = pygame.time.Clock()
+    clock1 = pygame.time.Clock()
     time = pygame.time.Clock()
+
+    bonus = [1]
 
     u = 1
 
@@ -264,9 +273,61 @@ while running:
                 if len(bullets) <= 7:
                     bullets.append(bullet)
 
-    if not is_menu[1] and not g_o[1]:
-        if monsters == []:
+    if bb and not g_o[1]:
+
+        screen.fill((0, 0, 0))
+        screen.blit(hero, (h.x, h.y))
+
+        font = pygame.font.Font(None, 50)
+        screen.blit(font.render(str(sch), 1, (0, 255, 0)), (20, 10))
+
+        for bullet_ in bullets:
+            bullet_.draw()
+
+        screen.blit(mon.draw(), (mon.x, mon.y))
+
+        s1 += clock1.tick()
+        if s1 / 1000 >= 0.7:
+            dir1 = d1[(d1.index(dir1) + 1) % 8]
+
+            mon.pos(dir1)
+            s1 = 0
+
+        for b in bullets:
+            if (b.x >= mon.x and (b.x + W) <= (mon.x + mon.w)) and (
+                    b.y <= (mon.y + mon.h)):
+                bullets.pop(bullets.index(b))
+                bb = False
+                make_m()
+                sch += 50
+                pygame.mixer.music.stop()
+                fullname = os.path.join('data1', 'background.mp3')
+                pygame.mixer.music.load(fullname)
+                pygame.mixer.music.play(-1)
+
+        if (((h.x + 22) >= mon.x and (h.x + 22) <= (mon.x + mon.w)) and (
+                (mon.y + mon.h) >= h.y)) or (mon.y >= 450):
+            bb = False
             make_m()
+            pygame.mixer.music.stop()
+            fullname = os.path.join('data1', 'background.mp3')
+            pygame.mixer.music.load(fullname)
+            pygame.mixer.music.play(-1)
+
+
+
+    if not is_menu[1] and not g_o[1] and not bb:
+        if monsters == []:
+            random.shuffle(bonus)
+            if bonus[0] == 1:
+                bb = True
+                pygame.mixer.music.stop()
+
+                fullname = os.path.join('data1', 'background1.mp3')
+                pygame.mixer.music.load(fullname)
+                pygame.mixer.music.play(-1)
+            else:
+                make_m()
 
         screen.fill((0, 0, 0))
         screen.blit(hero, (h.x, h.y))
@@ -291,9 +352,17 @@ while running:
                 i.pos(dir)
             s = 0
 
+        for m in monsters:
+            if ((h.x + 22) >= m.x and (h.x + 22) <= (m.x + m.w)) and ((m.y + m.h) >= h.y):
+                g_o[0], g_o[1] = True, True
+                fullname = os.path.join('data1', 'end.wav')
+                crash_sound = pygame.mixer.Sound(fullname)
+                pygame.mixer.Sound.play(crash_sound)
+
         for b in bullets:
             for mo in monsters:
-                if (b.x >= mo.x and (b.x + W) <= (mo.x + mo.w)) and (b.y <= (mo.y + mo.h)):
+                if (b.x >= mo.x and (b.x + W) <= (mo.x + mo.w)) and (
+                        b.y <= (mo.y + mo.h)):
                     explosions.append(explosion(mo.x, mo.y))
                     monsters.pop(monsters.index(mo))
                     bullets.pop(bullets.index(b))
@@ -335,6 +404,12 @@ while running:
                 fullname = os.path.join('data1', 'end.wav')
                 crash_sound = pygame.mixer.Sound(fullname)
                 pygame.mixer.Sound.play(crash_sound)
+
+        for b in bullets:
+            for m in m_bullets:
+                if (b.y <= (m.y + 10)) and ((b.x + 5) >= m.x) and (b.x <= (m.x + 5)):
+                    m_bullets.pop(m_bullets.index(m))
+                    bullets.pop(bullets.index(b))
 
     pygame.display.flip()
 
