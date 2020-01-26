@@ -153,10 +153,11 @@ is_menu = [True, True]
 
 
 def Start():
-    global bullets, monsters, is_game, is_menu, h, dir, clock, time, g_o, sch, xx, u, m_bullets, explosions, bonus, bb, u1, dir1, clock1, s1, mon
+    global bullets, monsters, is_game, is_menu, h, dir, clock, time, g_o, sch, xx, u, m_bullets, explosions, bonus, bb, u1, dir1, clock1, s1, mon, ee
 
     sch = 0
     xx = 0
+    ee = 0
     mon = Monster('bonus.png', 20, 20, 2, a1=(width // 3 - 38), b1=50)
     bullets = []
     monsters = []
@@ -300,6 +301,8 @@ while running:
                 bb = False
                 make_m()
                 sch += 50
+                mon.x, mon.y = 20, 20
+
                 pygame.mixer.music.stop()
                 fullname = os.path.join('data1', 'background.mp3')
                 pygame.mixer.music.load(fullname)
@@ -309,12 +312,11 @@ while running:
                 (mon.y + mon.h) >= h.y)) or (mon.y >= 450):
             bb = False
             make_m()
+            mon.x, mon.y = 20, 20
             pygame.mixer.music.stop()
             fullname = os.path.join('data1', 'background.mp3')
             pygame.mixer.music.load(fullname)
             pygame.mixer.music.play(-1)
-
-
 
     if not is_menu[1] and not g_o[1] and not bb:
         if monsters == []:
@@ -326,6 +328,12 @@ while running:
                 fullname = os.path.join('data1', 'background1.mp3')
                 pygame.mixer.music.load(fullname)
                 pygame.mixer.music.play(-1)
+
+                eee = pygame.time.Clock()
+                ee += eee.tick()
+                while ee / 1000 >= 0.7:
+                    pass
+                ee = 0
             else:
                 make_m()
 
@@ -386,7 +394,7 @@ while running:
         for m in monsters:
             if m.y >= 450:
                 g_o[0], g_o[1] = True, True
-                fullname = os.path.join('data1', 'crash.wav')
+                fullname = os.path.join('data1', 'end.wav')
                 crash_sound = pygame.mixer.Sound(fullname)
                 pygame.mixer.Sound.play(crash_sound)
 
